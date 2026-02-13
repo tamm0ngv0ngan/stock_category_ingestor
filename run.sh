@@ -1,0 +1,1 @@
+./build/install/stock_category_ingestor/bin/stock_category_ingestor
