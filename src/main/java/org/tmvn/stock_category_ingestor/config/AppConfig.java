@@ -11,6 +11,7 @@ import java.util.Properties;
 
 public class AppConfig {
     public static Firestore firestore;
+    public static String stockLinkPath;
 
     static {
         String filePath = getConfigFilePath();
@@ -19,6 +20,7 @@ public class AppConfig {
             properties.load(is);
             String credentialsPath = properties.getProperty("firebase.credentials.path");
             updateFirestore(credentialsPath);
+            stockLinkPath = properties.getProperty("stock.link.path");
         } catch (IOException ex) {
             throw new RuntimeException("Cannot read config file with error: " + ex.getMessage());
         }
