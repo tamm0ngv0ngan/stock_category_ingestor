@@ -40,6 +40,7 @@ tasks.register('checkGitStatus') {
 
 dependencies {
     implementation 'com.google.firebase:firebase-admin:9.7.1'
+    implementation 'org.jsoup:jsoup:1.22.1'
 
     implementation 'org.tmvn.lib:git-info:1.0.0'
     implementation 'org.slf4j:slf4j-api:2.0.17'

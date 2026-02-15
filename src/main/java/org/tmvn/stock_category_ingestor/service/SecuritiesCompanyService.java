@@ -15,6 +15,7 @@ public class SecuritiesCompanyService {
 
 
     public void updateSecuritiesCompanies() {
+        log.info("Start updating securities companies");
         Map<String, SecuritiesCompany> securitiesCompanyMap = repository.getAll(COLLECTION_NAME, SecuritiesCompany.class);
         if (securitiesCompanyMap.size() != 2) {
             securitiesCompanyMap.keySet().forEach(id -> repository.delete(COLLECTION_NAME, id));

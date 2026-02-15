@@ -1,9 +1,6 @@
 package org.tmvn.stock_category_ingestor.repository;
 
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.WriteBatch;
+import com.google.cloud.firestore.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +28,21 @@ public class FirestoreRepository {
         }
     }
 
+    private <T> List<T> query(Query query, Class<T> clazz) {
+        try {
+            QuerySnapshot snapshots = query.get().get();
+            return snapshots.getDocuments().stream().map(doc -> doc.toObject(clazz)).toList();
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+            throw new RuntimeException("Cannot query data");
+        }
+    }
+
+    public <T> List<T> queryEquals(String collection, String field, Object value, Class<T> clazz) {
+        Query query = firestore.collection(collection).whereEqualTo(field, value);
+        return query(query, clazz);
+    }
+
     public <T> void updateBatch(String collection, Map<String, T> dataMap) {
         List<String> keys = new ArrayList<>(dataMap.keySet());
         List<List<String>> subKeyLists = IntStream.range(0, (keys.size() + MAX_BATCH_SIZE - 1) / MAX_BATCH_SIZE)
@@ -40,7 +52,7 @@ public class FirestoreRepository {
             WriteBatch batch = firestore.batch();
             for (String key: subKeyList) {
                 var docRef = firestore.collection(collection).document(key);
-                batch.set(docRef, dataMap.get(key));
+                batch.set(docRef, dataMap.get(key), SetOptions.merge());
             }
 
             try {

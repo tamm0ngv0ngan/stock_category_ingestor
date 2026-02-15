@@ -6,20 +6,19 @@ import org.tmvn.lib.GitInfo;
 import org.tmvn.stock_category_ingestor.config.AppConfig;
 import org.tmvn.stock_category_ingestor.repository.FirestoreRepository;
 import org.tmvn.stock_category_ingestor.service.SecuritiesCompanyService;
-import org.tmvn.stock_category_ingestor.service.StockLinkService;
+import org.tmvn.stock_category_ingestor.service.StockService;
 
 @Slf4j
 public class Main {
     private static final SecuritiesCompanyService securitiesCompanyService;
-    private static final StockLinkService stockLinkService;
+    private static final StockService stockLinkService;
 
     static {
         log.info("Config Bean...");
         Firestore firestore = AppConfig.firestore;
         FirestoreRepository repository = new FirestoreRepository(firestore);
         securitiesCompanyService = new SecuritiesCompanyService(repository);
-        String stockLinkPath = AppConfig.stockLinkPath;
-        stockLinkService = new StockLinkService(stockLinkPath, repository);
+        stockLinkService = new StockService(repository);
     }
 
     public static void main(String[] args) {
@@ -33,6 +32,6 @@ public class Main {
 
         log.info("Start App...");
         securitiesCompanyService.updateSecuritiesCompanies();
-        stockLinkService.updateToFirebase();
+        stockLinkService.updateStocks();
     }
 }
