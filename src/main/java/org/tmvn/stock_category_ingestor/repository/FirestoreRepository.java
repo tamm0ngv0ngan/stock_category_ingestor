@@ -17,7 +17,7 @@ public class FirestoreRepository {
     private final Firestore firestore;
     private static final int MAX_BATCH_SIZE = 469;
 
-    public <T>Map<String, T> getAll(String collection, Class<T> clazz) {
+    public <T> Map<String, T> getAll(String collection, Class<T> clazz) {
         try {
             QuerySnapshot querySnapshot = firestore.collection(collection).get().get();
             return querySnapshot.getDocuments().stream()
