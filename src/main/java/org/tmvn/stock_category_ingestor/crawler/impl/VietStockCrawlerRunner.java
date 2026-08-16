@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.tmvn.stock_category_ingestor.crawler.WebCrawlerRunner;
 import org.tmvn.stock_category_ingestor.model.Stock;
 
@@ -17,45 +18,48 @@ import java.util.Objects;
 @Accessors(fluent = true)
 @RequiredArgsConstructor
 public class VietStockCrawlerRunner extends WebCrawlerRunner {
+    private final Stock.StockBuilder stockBuilder = Stock.builder();
     private final static int MAX_TRY = 5;
-    private final Stock stock;
+    private final String symbol;
+    private final String url;
 
-    private void setCode(Element titleElement) {
-        String code = titleElement.getElementsByClass("title-link").getFirst().text();
-        stock.setCode(code);
+    private void setCode(Element companyInfoElement) {
+        String code = companyInfoElement.getElementsByClass("company-general-stock-code").getFirst().text();
+        stockBuilder.symbol(code);
     }
 
-    private void setName(Element titleElement) {
-        String name = titleElement.getElementsByTag("b").getFirst().text();
-        stock.setName(name);
+    private void setName(Element companyInfoElement) {
+        String name = companyInfoElement.getElementsByClass("company-general-name").getFirst().text();
+        stockBuilder.name(name);
     }
 
-    private void setExchange(Element titleElement) {
-        String exchange = titleElement.getElementsByTag("b").get(1).text();
-        stock.setExchange(exchange.substring(0, exchange.indexOf(":")).toUpperCase());
+    private void setExchange(Element companyInfoElement) {
+        String exchange = companyInfoElement.getElementsByClass("company-general-stock-exchange").getFirst().text();
+        stockBuilder.exchange(exchange.toUpperCase());
     }
 
-    private void setIndustry(Document document) {
-        Element industryElement = document.getElementsByClass("sector-level").getFirst();
-        String industry = industryElement.getElementsByClass("title-link").getFirst().text();
-        stock.setIndustry(industry);
+    private void setIndustry(Element companyInfoElement) {
+        StringBuilder industry = new StringBuilder();
+        Element companySector = companyInfoElement.getElementsByClass("company-general-sector").getFirst();
+        Elements linkElements = companySector.getElementsByTag("a");
+        for (Element linkElement : linkElements) {
+            industry.append(linkElement.text());
+            industry.append(">>");
+        }
+        if (industry.length() >= 2) {
+            stockBuilder.industry(industry.substring(0, industry.length() - 2));
+        } else {
+            stockBuilder.industry("");
+        }
     }
 
     private void setDescription(Document document) {
-        Element summaryElement = document.getElementById("summary-full");
-        if (Objects.isNull(summaryElement)) {
-            stock.setDescription("");
+        Element summaryElement = document.getElementsByClass("overview-summary__body").getFirst();
+        Element descriptionElement = summaryElement.getElementsByTag("p").first();
+        if (Objects.isNull(descriptionElement)) {
+            stockBuilder.description("");
         } else {
-            Element spanElement = summaryElement.getElementsByTag("span").getFirst();
-            if (spanElement.getElementsByTag("p").isEmpty()) {
-                stock.setDescription(spanElement.text());
-            } else {
-                Element descriptionElement = spanElement.getElementsByTag("p").getFirst();
-                if (!descriptionElement.getElementsByTag("a").isEmpty()) {
-                    descriptionElement.getElementsByTag("a").remove();
-                }
-                stock.setDescription(descriptionElement.text());
-            }
+            stockBuilder.description(descriptionElement.text());
         }
 
     }
@@ -63,17 +67,23 @@ public class VietStockCrawlerRunner extends WebCrawlerRunner {
     @Override
     public void run() {
         try {
-            log.info("Start Crawler For: {}", stock.getCode());
-            Document document = downloadPage(stock.getUrl(), MAX_TRY);
-            Element titleElement = document.getElementsByClass("h1-title").getFirst();
-            setCode(titleElement);
-            setName(titleElement);
-            setExchange(titleElement);
+            log.info("Start Crawler For: {}", symbol);
+            stockBuilder.url(url);
+            Document document = downloadPage(url, MAX_TRY);
+            Elements companyInfoElements = document.getElementsByClass("company-general-info");
+            if (companyInfoElements.size() != 1) {
+                log.error("Page update layout, please update code");
+                throw new RuntimeException();
+            }
+            Element companyInfoElement = companyInfoElements.getFirst();
+            setCode(companyInfoElement);
+            setName(companyInfoElement);
+            setExchange(companyInfoElement);
             setIndustry(document);
             setDescription(document);
-            stock.setUpdated(true);
+            stockBuilder.updated(true);
         } catch (Exception ex) {
-            log.error("Get Stock Data from URL: {} for {} error: {}", stock.getUrl(), stock.getCode(), ex.getMessage());
+            log.error("Get Stock Data from URL: {} for {} error: {}", url, symbol, ex.getMessage());
             throw new RuntimeException(ex);
         }
     }

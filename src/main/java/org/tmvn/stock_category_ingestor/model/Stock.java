@@ -1,18 +1,15 @@
 package org.tmvn.stock_category_ingestor.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
+import com.google.cloud.firestore.annotation.ServerTimestamp;
+import lombok.Builder;
+import org.apache.commons.codec.digest.DigestUtils;
 
-@Data
-@Accessors(chain = true)
-@NoArgsConstructor
-public class Stock {
-    private String url;
-    private String code;
-    private String name;
-    private String industry;
-    private String exchange;
-    private String description;
-    private Boolean updated;
+import java.util.Date;
+
+@Builder
+public record Stock(String symbol, String name, String industry, String exchange, String description, String url,
+                    Boolean updated, @ServerTimestamp Date updatedAt) {
+    public String id() {
+        return DigestUtils.sha256Hex(symbol);
+    }
 }

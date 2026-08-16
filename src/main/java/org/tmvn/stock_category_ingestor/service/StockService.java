@@ -20,11 +20,12 @@ public class StockService {
 
     public void updateStocks() {
         List<Stock> notUpdatedStocks = repository.queryEquals(COLLECTION_NAME, "updated", false, Stock.class);
-        List<VietStockCrawlerRunner> runners = notUpdatedStocks.stream().map(VietStockCrawlerRunner::new).toList();
+        List<VietStockCrawlerRunner> runners = notUpdatedStocks.stream()
+                .map(s -> new VietStockCrawlerRunner(s.symbol(), s.url())).toList();
         ThreadExecutor executor = new ThreadExecutor(30, runners);
         executor.execute();
-        Map<String, Stock> updatedStockMap = runners.stream().map(VietStockCrawlerRunner::stock)
-                .collect(Collectors.toMap(Stock::getCode, Function.identity()));
+        Map<String, Stock> updatedStockMap = runners.stream().map(VietStockCrawlerRunner::stockBuilder)
+                .map(Stock.StockBuilder::build).collect(Collectors.toMap(Stock::id, Function.identity()));
         repository.updateBatch(COLLECTION_NAME, updatedStockMap);
     }
 }
