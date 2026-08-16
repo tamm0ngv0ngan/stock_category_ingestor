@@ -5,7 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.tmvn.stock_category_ingestor.model.SecuritiesCompany;
 import org.tmvn.stock_category_ingestor.repository.FirestoreRepository;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -16,12 +19,9 @@ public class SecuritiesCompanyService {
 
     public void updateSecuritiesCompanies() {
         log.info("Start updating securities companies");
-        Map<String, SecuritiesCompany> securitiesCompanyMap = repository.getAll(COLLECTION_NAME, SecuritiesCompany.class);
-        if (securitiesCompanyMap.size() != 2) {
-            securitiesCompanyMap.keySet().forEach(id -> repository.delete(COLLECTION_NAME, id));
-            repository.insert(COLLECTION_NAME, SecuritiesCompany.ofVND());
-            repository.insert(COLLECTION_NAME, SecuritiesCompany.ofTCBS());
-        }
+        List<SecuritiesCompany> securitiesCompanyList = List.of(SecuritiesCompany.ofVND(), SecuritiesCompany.ofTCBS());
+        Map<String, SecuritiesCompany> securitiesCompanyMap = securitiesCompanyList.stream()
+                .collect(Collectors.toMap(SecuritiesCompany::id, Function.identity()));
+        repository.updateBatch(COLLECTION_NAME, securitiesCompanyMap);
     }
-
 }
